@@ -3,22 +3,18 @@ import spacy
 from fuzzywuzzy import fuzz
 import pandas as pd
 import os
+import altair as alt
+from datetime import datetime
 import plotly.express as px
 
 # Load NLP model for grammar check
 nlp = spacy.load('en_core_web_sm')
 
 # --- Helper Functions ---
-def ensure_data_directory(subject):
-    # Create a directory for the subject if it doesn't exist
-    subject_path = f'data/{subject}'
-    if not os.path.exists(subject_path):
-        os.makedirs(subject_path)
-    return subject_path
-
 def save_questions(subject, num_questions, questions, correct_answers, date, session):
-    subject_path = ensure_data_directory(subject)
-    
+    if not os.path.exists(f'data/{subject}'):
+        os.makedirs(f'data/{subject}')
+
     # Save the questions, correct answers, date, and session to a CSV file
     question_data = {
         "Question": questions,
@@ -28,13 +24,14 @@ def save_questions(subject, num_questions, questions, correct_answers, date, ses
     }
     
     df = pd.DataFrame(question_data)
-    df.to_csv(f"{subject_path}/{subject}_questions.csv", index=False)
+    df.to_csv(f"data/{subject}/{subject}_questions.csv", index=False)
 
 def save_answers(student_id, subject, answers):
-    subject_path = ensure_data_directory(subject)
-
+    if not os.path.exists(f'data/{subject}'):
+        os.makedirs(f'data/{subject}')
+    
     # Save answers to a file specific to the subject
-    with open(f"{subject_path}/{student_id}_answers.txt", "w") as f:
+    with open(f"data/{subject}/{student_id}_answers.txt", "w") as f:
         for i, answer in enumerate(answers, 1):
             f.write(f"Q{i}: {answer}\n")
 
@@ -50,8 +47,6 @@ def grammar_check(doc):
     return len(errors)
 
 def save_performance(student_id, subject, plagiarism_results, grammar_errors, num_questions):
-    subject_path = ensure_data_directory(subject)
-
     # Create a dictionary to hold performance data
     result_data = {
         "subject": subject,
@@ -63,15 +58,14 @@ def save_performance(student_id, subject, plagiarism_results, grammar_errors, nu
         result_data[f'q{i + 1}_grammar_errors'] = grammar_errors[i]
 
     # Save student performance data in a separate CSV file for each student
-    file_path = f"{subject_path}/{student_id}_performance.csv"
+    file_path = f"data/{subject}/{student_id}_performance.csv"
     pd.DataFrame([result_data]).to_csv(file_path, index=False)
 
     # Update overall plagiarism data
     update_overall_plagiarism(subject, plagiarism_results)
 
 def update_overall_plagiarism(subject, plagiarism_results):
-    subject_path = ensure_data_directory(subject)
-    overall_file_path = f"{subject_path}/overall_plagiarism.csv"
+    overall_file_path = f"data/{subject}/overall_plagiarism.csv"
     
     if os.path.exists(overall_file_path):
         overall_data = pd.read_csv(overall_file_path)
@@ -95,73 +89,145 @@ def update_overall_plagiarism(subject, plagiarism_results):
 
     overall_data.to_csv(overall_file_path, index=False)
 
-def display_dashboard(selected_subject):
-    subject_path = f'data/{selected_subject}'
+import os
+import pandas as pd
+import plotly.express as px
+import streamlit as st
 
-    # Performance Data
-    performance_file_path = f"{subject_path}/{selected_subject}_performance.csv"
+# Function to display the dashboard based on selected subject, date, and session
+def display_dashboard(selected_subject, selected_date, selected_session, student_id):
+    # Construct file paths
+    performance_file_path = f'data/{selected_subject}/{student_id}_performance.csv'
+    questions_file_path = f"data/{selected_subject}/{selected_subject}_questions.csv"
+    overall_plagiarism_path = f'data/{selected_subject}/overall_plagiarism.csv'
+    
+    # Check if performance data exists
     if os.path.exists(performance_file_path):
         try:
+            # Read performance data
             performance_data = pd.read_csv(performance_file_path, on_bad_lines='skip')
             st.subheader("Performance Data")
             st.write(performance_data)
 
-            # Ensure the necessary columns are present
+            # Check for necessary columns to calculate plagiarism scores
             if 'student' in performance_data.columns and 'q1_plagiarism' in performance_data.columns:
-                # Bar Chart for average plagiarism scores
+                # Average plagiarism scores per student
                 avg_plagiarism = performance_data.filter(like='_plagiarism').mean(axis=1)
                 performance_data['Average Plagiarism'] = avg_plagiarism
 
+                # Bar chart for average plagiarism scores
                 bar_chart = px.bar(performance_data, 
-                                    x='student', 
-                                    y='Average Plagiarism',  
-                                    title='Average Plagiarism Scores by Student',
-                                    labels={'student': 'Students', 'Average Plagiarism': 'Average Plagiarism Score'})
+                                   x='student', 
+                                   y='Average Plagiarism',  
+                                   title='Average Plagiarism Scores by Student',
+                                   labels={'student': 'Students', 'Average Plagiarism': 'Average Plagiarism Score'})
                 st.plotly_chart(bar_chart)
 
-                # Pie Chart for total plagiarism distribution
+                # Total plagiarism scores per student
                 total_plagiarism = performance_data.filter(like='_plagiarism').sum(axis=1)
                 performance_data['Total Plagiarism'] = total_plagiarism
 
+                # Pie chart for total plagiarism distribution
                 pie_chart = px.pie(performance_data, 
                                    names='student', 
                                    values='Total Plagiarism', 
                                    title='Total Plagiarism Distribution by Student')
                 st.plotly_chart(pie_chart)
-
-        except pd.errors.ParserError as e:
+        except Exception as e:
             st.error(f"Error reading performance data: {e}")
     else:
-        st.write("No performance data available yet.")
+        st.warning("No performance data available.")
 
-    # Questions Data
-    questions_file_path = f"{subject_path}/{selected_subject}_questions.csv"
+    # Check if questions data exists
     if os.path.exists(questions_file_path):
         try:
+            # Read questions data
             questions_data = pd.read_csv(questions_file_path, on_bad_lines='skip')
             st.subheader("Questions Data")
             st.write(questions_data)
 
-            # Ensure the necessary columns for questions data
+            # Check for necessary columns to display questions by category
             if 'Category' in questions_data.columns and 'Count' in questions_data.columns:
+                # Bar chart for number of questions by category
                 questions_bar_chart = px.bar(questions_data, 
-                                              x='Category',  
-                                              y='Count',     
-                                              title='Number of Questions by Category',
-                                              labels={'Category': 'Categories', 'Count': 'Number of Questions'})
+                                             x='Category',  
+                                             y='Count',     
+                                             title='Number of Questions by Category',
+                                             labels={'Category': 'Categories', 'Count': 'Number of Questions'})
                 st.plotly_chart(questions_bar_chart)
 
+            # Check for question type distribution
             if 'Question Type' in questions_data.columns:
+                # Pie chart for question type distribution
                 questions_pie_chart = px.pie(questions_data, 
-                                               names='Question Type',  
-                                               values='Count',        
-                                               title='Distribution of Questions by Type')
+                                             names='Question Type',  
+                                             values='Count',        
+                                             title='Distribution of Questions by Type')
                 st.plotly_chart(questions_pie_chart)
-
-        except pd.errors.ParserError as e:
+        except Exception as e:
             st.error(f"Error reading questions data: {e}")
     else:
-        st.write("No questions data available for this subject.")
+        st.warning("No questions data available.")
+
+    # Check if overall plagiarism data exists
+    if os.path.exists(overall_plagiarism_path):
+        try:
+            # Read overall plagiarism data
+            overall_data = pd.read_csv(overall_plagiarism_path)
+            st.subheader("Overall Plagiarism Statistics")
+            st.write(overall_data)
+
+            # Bar chart for total students and total plagiarism score
+            fig_overall = px.bar(overall_data, 
+                                 x='subject', 
+                                 y=['total_students', 'total_plagiarism_score'], 
+                                 title='Total Students and Plagiarism Score by Subject',
+                                 labels={'value': 'Count', 'variable': 'Metrics'},
+                                 barmode='group',
+                                 color_discrete_sequence=["blue", "orange"])
+            st.plotly_chart(fig_overall)
+        except Exception as e:
+            st.error(f"Error reading overall plagiarism data: {e}")
+    else:
+        st.warning("No overall plagiarism data available.")
+
+    # Handle individual student analytics
+    if student_id:
+        student_performance_file = f'data/{selected_subject}/{student_id}_performance.csv'
+        if os.path.exists(student_performance_file):
+            try:
+                # Read student performance data
+                student_performance_data = pd.read_csv(student_performance_file)
+                st.subheader(f"Performance Data for Student {student_id}")
+                st.write(student_performance_data)
+
+                # Plagiarism and Grammar errors
+                questions = [f'q{i + 1}' for i in range(len(student_performance_data.columns) - 2)]
+                plagiarism_scores = [student_performance_data[f'q{i + 1}_plagiarism'][0] for i in range(len(questions))]
+                grammar_errors = [student_performance_data[f'q{i + 1}_grammar_errors'][0] for i in range(len(questions))]
+
+                # Bar chart for plagiarism scores
+                fig_student = px.bar(x=questions, 
+                                     y=plagiarism_scores, 
+                                     title=f'Plagiarism Scores for Student {student_id}',
+                                     labels={'x': 'Questions', 'y': 'Plagiarism Scores'},
+                                     color_discrete_sequence=["blue"])
+
+                # Add grammar errors as a line plot
+                fig_student.add_scatter(x=questions, 
+                                        y=grammar_errors, 
+                                        mode='lines+markers', 
+                                        name='Grammar Errors', 
+                                        marker=dict(color='orange'))
+
+                st.plotly_chart(fig_student)
+            except Exception as e:
+                st.error(f"Error reading student performance data: {e}")
+        else:
+            st.warning(f"No performance data available for student {student_id}.")
+
+
+
 
 # --- Main App ---
 st.title("Online Exam Portal")
@@ -214,6 +280,8 @@ if page == "Faculty Dashboard":
             save_questions(subject, num_questions, st.session_state.questions, st.session_state.answers, st.session_state.date, st.session_state.session)
             st.success("Questions saved successfully! Students can now answer them.")
 
+
+
 elif page == "Student Page":
     if not st.session_state.questions or not st.session_state.subject:
         st.warning("No questions available at the moment. Please check back later.")
@@ -224,22 +292,40 @@ elif page == "Student Page":
             student_id = st.text_input("Enter your Student ID:")
             answers = []
             for i, question in enumerate(st.session_state.questions, 1):
-                st.write(f"Question {i}: {question}")
-                answer = st.text_area(f"Your Answer for Question {i}:")
+                st.write(f"Q{i}: {question}")
+                answer = st.text_area(f"Your Answer for Question {i}")
                 answers.append(answer)
 
-            submit_button = st.form_submit_button("Submit Answers")
-            if submit_button:
-                save_answers(student_id, st.session_state.subject, answers)
-                plagiarism_results = plagiarism_check(answers, st.session_state.answers)
-                grammar_errors = [grammar_check(nlp(answer)) for answer in answers]
-                save_performance(student_id, st.session_state.subject, plagiarism_results, grammar_errors, len(answers))
-                st.success("Answers submitted successfully! Thank you.")
+            submit_button = st.form_submit_button(label="Submit Answers")
 
+        if submit_button:
+            save_answers(student_id, st.session_state.subject, answers)
+            st.success("Answers submitted successfully!")
+
+            # Plagiarism Detection
+            plagiarism_results = plagiarism_check(answers, st.session_state.answers)
+
+            # NLP Evaluation (Grammar, Coherence)
+            grammar_errors = []
+            for answer in answers:
+                doc = nlp(answer)
+                grammar_errors.append(grammar_check(doc))
+
+            # Save performance data
+            save_performance(student_id, st.session_state.subject, plagiarism_results, grammar_errors, len(answers))
+
+
+# Analytics Dashboard
 elif page == "Analytics Dashboard":
     st.header("Analytics Dashboard")
 
-    selected_subject = st.selectbox("Select Subject:", os.listdir('data/'))
+    selected_subject = st.selectbox("Select Subject:", [f for f in os.listdir('data') if os.path.isdir(os.path.join('data', f))])
+    selected_date = st.date_input("Select Date for Analytics:")
+    selected_session = st.selectbox("Select Session:", ["Morning", "Afternoon"])
+    
+    student_id = st.text_input("Enter Student ID")
 
-    if selected_subject:
-        display_dashboard(selected_subject)
+    if st.button("Show Analytics"):
+        display_dashboard(selected_subject, selected_date.strftime("%Y-%m-%d"), selected_session,student_id)
+
+# --- End of Main App ---

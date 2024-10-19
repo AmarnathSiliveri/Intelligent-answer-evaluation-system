@@ -89,70 +89,113 @@ def update_overall_plagiarism(subject, plagiarism_results):
 
     overall_data.to_csv(overall_file_path, index=False)
 
-def display_dashboard(selected_subject, selected_date, selected_session):
-    performance_file_path = f'data/{selected_subject}/{selected_subject}_performance.csv'
-    
-    if os.path.exists(performance_file_path):
-        try:
-            performance_data = pd.read_csv(performance_file_path, on_bad_lines='skip')
-            st.subheader("Performance Data")
-            st.write(performance_data)
 
-            # Ensure the necessary columns are present
-            if 'student' in performance_data.columns and 'q1_plagiarism' in performance_data.columns:
-                # Bar Chart for average plagiarism scores
-                avg_plagiarism = performance_data.filter(like='_plagiarism').mean(axis=1)
-                performance_data['Average Plagiarism'] = avg_plagiarism
-
-                bar_chart = px.bar(performance_data, 
-                                    x='student', 
-                                    y='Average Plagiarism',  
-                                    title='Average Plagiarism Scores by Student',
-                                    labels={'student': 'Students', 'Average Plagiarism': 'Average Plagiarism Score'})
-                st.plotly_chart(bar_chart)
-
-                # Pie Chart for total plagiarism distribution
-                total_plagiarism = performance_data.filter(like='_plagiarism').sum(axis=1)
-                performance_data['Total Plagiarism'] = total_plagiarism
-
-                pie_chart = px.pie(performance_data, 
-                                   names='student', 
-                                   values='Total Plagiarism', 
-                                   title='Total Plagiarism Distribution by Student')
-                st.plotly_chart(pie_chart)
-
-        except pd.errors.ParserError as e:
-            st.error(f"Error reading performance data: {e}")
-    else:
-        st.write("No performance data available yet.")
-
+# Function to display the dashboard based on selected subject, date, and session
+# Function to display the dashboard based on selected subject, date, and session
+def display_dashboard(selected_subject, selected_date, selected_session, student_id):
+    # Construct file paths
+    performance_file_path = f'data/{selected_subject}/{student_id}_performance.csv'
     questions_file_path = f"data/{selected_subject}/{selected_subject}_questions.csv"
+    overall_plagiarism_path = f'data/{selected_subject}/overall_plagiarism.csv'
+    
+    # Handle individual student analytics at the top
+    if student_id:
+        if os.path.exists(performance_file_path):
+            try:
+                # Read student performance data
+                student_performance_data = pd.read_csv(performance_file_path)
+                st.subheader(f"Performance Data for Student {student_id}")
+                st.write(student_performance_data)
+
+                # Plagiarism and Grammar errors
+                questions = [f'q{i + 1}' for i in range(len(student_performance_data.columns) - 2)]
+                plagiarism_scores = [student_performance_data[f'q{i + 1}_plagiarism'][0] for i in range(len(questions))]
+                grammar_errors = [student_performance_data[f'q{i + 1}_grammar_errors'][0] for i in range(len(questions))]
+
+                # Bar chart for plagiarism scores
+                fig_student = px.bar(x=questions, 
+                                     y=plagiarism_scores, 
+                                     title=f'Plagiarism Scores for Student {student_id}',
+                                     labels={'x': 'Questions', 'y': 'Plagiarism Scores'},
+                                     color_discrete_sequence=["blue"])
+
+                # Add grammar errors as a line plot
+                fig_student.add_scatter(x=questions, 
+                                        y=grammar_errors, 
+                                        mode='lines+markers', 
+                                        name='Grammar Errors', 
+                                        marker=dict(color='orange'))
+
+                st.plotly_chart(fig_student)
+
+                # Pie chart for plagiarism and grammar errors
+                errors_data = {'Error Type': ['Plagiarism', 'Grammar Errors'], 
+                               'Count': [sum(plagiarism_scores), sum(grammar_errors)]}
+                errors_df = pd.DataFrame(errors_data)
+                st.subheader("Error Distribution")
+                st.plotly_chart(px.pie(errors_df, names='Error Type', values='Count', title='Distribution of Errors'))
+
+            except Exception as e:
+                st.write(" ")
+        else:
+            st.warning(f"No performance data available for student {student_id}.")
+
+    # Check if overall performance data exists
+    if os.path.exists(overall_plagiarism_path):
+        try:
+            # Read overall plagiarism data
+            overall_data = pd.read_csv(overall_plagiarism_path)
+            st.subheader("Overall Plagiarism Statistics")
+            st.write(overall_data)
+
+            # Bar chart for total students and total plagiarism score
+            fig_overall = px.bar(overall_data, 
+                                 x='subject', 
+                                 y=['total_students', 'total_plagiarism_score'], 
+                                 title='Total Students and Plagiarism Score by Subject',
+                                 labels={'value': 'Count', 'variable': 'Metrics'},
+                                 barmode='group',
+                                 color_discrete_sequence=["blue", "orange"])
+            st.plotly_chart(fig_overall)
+
+        except Exception as e:
+            st.error(f"Error reading overall plagiarism data: {e}")
+    else:
+        st.warning("No overall plagiarism data available.")
+
+    # Check if questions data exists
     if os.path.exists(questions_file_path):
         try:
+            # Read questions data
             questions_data = pd.read_csv(questions_file_path, on_bad_lines='skip')
             st.subheader("Questions Data")
             st.write(questions_data)
 
-            # Ensure the necessary columns for questions data
+            # Check for necessary columns to display questions by category
             if 'Category' in questions_data.columns and 'Count' in questions_data.columns:
+                # Bar chart for number of questions by category
                 questions_bar_chart = px.bar(questions_data, 
-                                              x='Category',  
-                                              y='Count',     
-                                              title='Number of Questions by Category',
-                                              labels={'Category': 'Categories', 'Count': 'Number of Questions'})
+                                             x='Category',  
+                                             y='Count',     
+                                             title='Number of Questions by Category',
+                                             labels={'Category': 'Categories', 'Count': 'Number of Questions'})
                 st.plotly_chart(questions_bar_chart)
 
+            # Check for question type distribution
             if 'Question Type' in questions_data.columns:
+                # Pie chart for question type distribution
                 questions_pie_chart = px.pie(questions_data, 
-                                               names='Question Type',  
-                                               values='Count',        
-                                               title='Distribution of Questions by Type')
+                                             names='Question Type',  
+                                             values='Count',        
+                                             title='Distribution of Questions by Type')
                 st.plotly_chart(questions_pie_chart)
 
-        except pd.errors.ParserError as e:
+        except Exception as e:
             st.error(f"Error reading questions data: {e}")
     else:
-        st.write("No questions data available for this subject.")
+        st.warning("No questions data available.")
+
+
 
 
 
@@ -250,54 +293,116 @@ elif page == "Analytics Dashboard":
     selected_date = st.date_input("Select Date for Analytics:")
     selected_session = st.selectbox("Select Session:", ["Morning", "Afternoon"])
     
+    student_id = st.text_input("Enter Student ID")
+
     if st.button("Show Analytics"):
-        display_dashboard(selected_subject, selected_date.strftime("%Y-%m-%d"), selected_session)
+        display_dashboard(selected_subject, selected_date.strftime("%Y-%m-%d"), selected_session,student_id)
 
-        # Load overall plagiarism data for visualization
-        subject = st.session_state.subject  # Set subject based on your context
-        overall_file_path = f"E:\pythonmlprojects\hackathonproject1\data\AI\overall_plagiarism.csv"
-        overall_data = pd.read_csv(overall_file_path)
+# --- End of Main App ---
 
-        # Display Overall Plagiarism Statistics
-        st.subheader("Overall Plagiarism Statistics")
-        st.write(overall_data)
 
-        # Bar Chart for Total Students and Total Plagiarism Score
-        fig_overall = px.bar(overall_data, 
-                            x='subject', 
-                            y=['total_students', 'total_plagiarism_score'], 
-                            title='Total Students and Plagiarism Score by Subject',
-                            labels={'value': 'Count', 'variable': 'Metrics'},
-                            barmode='group',
-                            color_discrete_sequence=["blue", "orange"])
 
-        st.plotly_chart(fig_overall)
 
-        # Load Student Performance Data
-        student_id = st.text_input("Enter Student ID") # Replace with actual student ID
-        
-        student_performance_file = f"E:\pythonmlprojects\hackathonproject1\data\AI\{student_id}_performance.csv"
-        student_performance_data = pd.read_csv(student_performance_file)
 
-            # Display Student Performance Data
-        st.subheader("Student Performance Data")
-        st.write(student_performance_data)
 
-            # Bar Chart for Student's Plagiarism and Grammar Errors
-        questions = [f'q{i + 1}' for i in range(len(student_performance_data.columns) - 2)]  # Assuming first two columns are 'subject' and 'student'
-        plagiarism_scores = [student_performance_data[f'q{i + 1}_plagiarism'][0] for i in range(len(questions))]
-        grammar_errors = [student_performance_data[f'q{i + 1}_grammar_errors'][0] for i in range(len(questions))]
 
-        fig_student = px.bar(x=questions, 
-                                y=plagiarism_scores, 
-                                title=f'Plagiarism Scores for Student {student_id}',
-                                labels={'x': 'Questions', 'y': 'Plagiarism Scores'},
-                                color_discrete_sequence=["blue"])
 
-        fig_student.add_scatter(x=questions, 
-                                    y=grammar_errors, 
-                                    mode='lines+markers', 
-                                    name='Grammar Errors', 
-                                    marker=dict(color='orange'))
 
-        st.plotly_chart(fig_student)
+
+
+
+
+
+
+
+
+def display_dashboard(selected_subject, selected_date, selected_session, student_id):
+    performance_file_path = f'data/{selected_subject}/{student_id}_performance.csv'
+    questions_file_path = f"data/{selected_subject}/{selected_subject}_questions.csv"
+    overall_plagiarism_path = f'data/{selected_subject}/overall_plagiarism.csv'
+    
+    # Check if performance data exists
+    if os.path.exists(performance_file_path):
+        try:
+            performance_data = pd.read_csv(performance_file_path, on_bad_lines='skip')
+            st.subheader("Performance Data")
+            st.write(performance_data)
+
+            # Check for necessary columns to calculate plagiarism scores
+            plagiarism_columns = [f'q{i + 1}_plagiarism' for i in range(len(performance_data.columns) - 2)]
+            if 'student' in performance_data.columns and all(col in performance_data.columns for col in plagiarism_columns):
+                avg_plagiarism = performance_data[plagiarism_columns].mean(axis=1)
+                performance_data['Average Plagiarism'] = avg_plagiarism
+
+                # Bar chart for average plagiarism scores
+                bar_chart = px.bar(performance_data, 
+                                   x='student', 
+                                   y='Average Plagiarism',  
+                                   title='Average Plagiarism Scores by Student',
+                                   labels={'student': 'Students', 'Average Plagiarism': 'Average Plagiarism Score'})
+                st.plotly_chart(bar_chart)
+
+                # Total plagiarism scores per student
+                total_plagiarism = performance_data[plagiarism_columns].sum(axis=1)
+                performance_data['Total Plagiarism'] = total_plagiarism
+
+                # Pie chart for total plagiarism distribution
+                pie_chart = px.pie(performance_data, 
+                                   names='student', 
+                                   values='Total Plagiarism', 
+                                   title='Total Plagiarism Distribution by Student')
+                st.plotly_chart(pie_chart)
+            else:
+                st.warning("Required columns for plagiarism data are missing.")
+        except Exception as e:
+            st.error(f"Error reading performance data: {e}")
+            st.write("Available columns:", performance_data.columns)
+    else:
+        st.warning("No performance data available.")
+
+    # Check if questions data exists
+    if os.path.exists(questions_file_path):
+        try:
+            questions_data = pd.read_csv(questions_file_path, on_bad_lines='skip')
+            st.subheader("Questions Data")
+            st.write(questions_data)
+
+            if 'Category' in questions_data.columns and 'Count' in questions_data.columns:
+                questions_bar_chart = px.bar(questions_data, 
+                                             x='Category',  
+                                             y='Count',     
+                                             title='Number of Questions by Category',
+                                             labels={'Category': 'Categories', 'Count': 'Number of Questions'})
+                st.plotly_chart(questions_bar_chart)
+
+            if 'Question Type' in questions_data.columns:
+                questions_pie_chart = px.pie(questions_data, 
+                                             names='Question Type',  
+                                             values='Count',        
+                                             title='Distribution of Questions by Type')
+                st.plotly_chart(questions_pie_chart)
+            else:
+                st.warning("Question Type data is missing.")
+        except Exception as e:
+            st.error(f"Error reading questions data: {e}")
+            st.write("Available columns:", questions_data.columns)
+    else:
+        st.warning("No questions data available.")
+
+    # Check if overall plagiarism data exists
+    if os.path.exists(overall_plagiarism_path):
+        try:
+            overall_data = pd.read_csv(overall_plagiarism_path)
+            st.subheader("Overall Plagiarism Statistics")
+            st.write(overall_data)
+
+            fig_overall = px.bar(overall_data, 
+                                 x='subject', 
+                                 y=['total_students', 'total_plagiarism_score'], 
+                                 title='Total Students and Plagiarism Score by Subject',
+                                 labels={'total_students': 'Total Students', 'total_plagiarism_score': 'Total Plagiarism Score'})
+            st.plotly_chart(fig_overall)
+        except Exception as e:
+            st.error(f"Error reading overall plagiarism data: {e}")
+    else:
+        st.warning("No overall plagiarism data available.")
