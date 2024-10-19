@@ -255,7 +255,7 @@ elif page == "Analytics Dashboard":
 
         # Load overall plagiarism data for visualization
         subject = st.session_state.subject  # Set subject based on your context
-        overall_file_path = f"data/{subject}/overall_plagiarism.csv"
+        overall_file_path = f"E:\pythonmlprojects\hackathonproject1\data\AI\overall_plagiarism.csv"
         overall_data = pd.read_csv(overall_file_path)
 
         # Display Overall Plagiarism Statistics
@@ -275,29 +275,29 @@ elif page == "Analytics Dashboard":
 
         # Load Student Performance Data
         student_id = st.text_input("Enter Student ID") # Replace with actual student ID
-        if student_id:
-            student_performance_file = f"data/{subject}/{student_id}_performance.csv"
-            student_performance_data = pd.read_csv(student_performance_file)
+        
+        student_performance_file = f"E:\pythonmlprojects\hackathonproject1\data\AI\{student_id}_performance.csv"
+        student_performance_data = pd.read_csv(student_performance_file)
 
             # Display Student Performance Data
-            st.subheader("Student Performance Data")
-            st.write(student_performance_data)
+        st.subheader("Student Performance Data")
+        st.write(student_performance_data)
 
             # Bar Chart for Student's Plagiarism and Grammar Errors
-            questions = [f'q{i + 1}' for i in range(len(student_performance_data.columns) - 2)]  # Assuming first two columns are 'subject' and 'student'
-            plagiarism_scores = [student_performance_data[f'q{i + 1}_plagiarism'][0] for i in range(len(questions))]
-            grammar_errors = [student_performance_data[f'q{i + 1}_grammar_errors'][0] for i in range(len(questions))]
+        questions = [f'q{i + 1}' for i in range(len(student_performance_data.columns) - 2)]  # Assuming first two columns are 'subject' and 'student'
+        plagiarism_scores = [student_performance_data[f'q{i + 1}_plagiarism'][0] for i in range(len(questions))]
+        grammar_errors = [student_performance_data[f'q{i + 1}_grammar_errors'][0] for i in range(len(questions))]
 
-            fig_student = px.bar(x=questions, 
+        fig_student = px.bar(x=questions, 
                                 y=plagiarism_scores, 
                                 title=f'Plagiarism Scores for Student {student_id}',
                                 labels={'x': 'Questions', 'y': 'Plagiarism Scores'},
                                 color_discrete_sequence=["blue"])
 
-            fig_student.add_scatter(x=questions, 
+        fig_student.add_scatter(x=questions, 
                                     y=grammar_errors, 
                                     mode='lines+markers', 
                                     name='Grammar Errors', 
                                     marker=dict(color='orange'))
 
-            st.plotly_chart(fig_student)
+        st.plotly_chart(fig_student)
