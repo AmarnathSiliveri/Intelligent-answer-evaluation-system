@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>Markmap</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+}
+#mindmap {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.17.2/dist/style.css">
+</head>
+<body>
+<svg id="mindmap"></svg>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-view@0.17.2/dist/browser/index.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.17.2/dist/index.js"></script><script>(r => {
+                setTimeout(r);
+              })(() => {
+  const {
+    markmap,
+    mm
+  } = window;
+  const {
+    el
+  } = markmap.Toolbar.create(mm);
+  el.setAttribute('style', 'position:absolute;bottom:20px;right:20px');
+  document.body.append(el);
+})</script><script>((getMarkmap, getOptions, root2, jsonOptions) => {
+              const markmap = getMarkmap();
+              window.mm = markmap.Markmap.create(
+                "svg#mindmap",
+                (getOptions || markmap.deriveOptions)(jsonOptions),
+                root2
+              );
+            })(() => window.markmap,null,{"content":"Online Exam Portal","children":[{"content":"Overview","children":[],"payload":{"lines":"5,6"}},{"content":"Features","children":[{"content":"\n<p data-lines=\"11,12\"><strong>Faculty Dashboard</strong>:</p>","children":[{"content":"Input for subject, number of questions, exam date, and session.","children":[],"payload":{"lines":"12,13"}},{"content":"Ability to enter questions and correct answers.","children":[],"payload":{"lines":"13,14"}},{"content":"Save questions and answers to CSV files for further analysis.","children":[],"payload":{"lines":"14,16"}}],"payload":{"lines":"11,16"}},{"content":"\n<p data-lines=\"16,17\"><strong>Student Page</strong>:</p>","children":[{"content":"Students can view questions and submit their answers.","children":[],"payload":{"lines":"17,18"}},{"content":"Answers are saved for each student, allowing for future analysis.","children":[],"payload":{"lines":"18,20"}}],"payload":{"lines":"16,20"}},{"content":"\n<p data-lines=\"20,21\"><strong>Analytics Dashboard</strong>:</p>","children":[{"content":"Display performance data for students and question statistics.","children":[],"payload":{"lines":"21,22"}},{"content":"Visualizations of average plagiarism scores, total plagiarism distribution, and question breakdowns.","children":[],"payload":{"lines":"22,23"}},{"content":"Overall plagiarism statistics for all students.","children":[],"payload":{"lines":"23,25"}}],"payload":{"lines":"20,25"}}],"payload":{"lines":"9,10"}},{"content":"Technologies Used","children":[{"content":"Python","children":[],"payload":{"lines":"27,28"}},{"content":"Streamlit","children":[],"payload":{"lines":"28,29"}},{"content":"Spacy (for NLP)","children":[],"payload":{"lines":"29,30"}},{"content":"Fuzzywuzzy (for plagiarism detection)","children":[],"payload":{"lines":"30,31"}},{"content":"Pandas (for data manipulation)","children":[],"payload":{"lines":"31,32"}},{"content":"Altair and Plotly (for data visualization)","children":[],"payload":{"lines":"32,34"}}],"payload":{"lines":"25,26"}},{"content":"Installation","children":[{"content":"\n<p data-lines=\"38,39\"><strong>Clone the Repository</strong>:</p>\n<pre><code class=\"language-bash\">git <span class=\"hljs-built_in\">clone</span> &lt;repository-url&gt;\n<span class=\"hljs-built_in\">cd</span> online-exam-portal\n</code></pre>","children":[],"payload":{"lines":"38,45"}},{"content":"\n<p data-lines=\"45,46\"><strong>Set Up Virtual Environment (Optional but recommended)</strong>:</p>\n<pre><code class=\"language-bash\">python -m venv venv\n<span class=\"hljs-built_in\">source</span> venv/bin/activate  <span class=\"hljs-comment\"># On Windows use `venv\\Scripts\\activate`</span>\n</code></pre>","children":[],"payload":{"lines":"45,52"}},{"content":"\n<p data-lines=\"52,53\"><strong>Install Required Libraries</strong>:</p>\n<pre><code class=\"language-bash\">pip install -r requirements.txt\n</code></pre>\n<p data-lines=\"58,59\">Make sure to create a <code>requirements.txt</code> file with the following content:</p>\n<pre><code data-lines=\"60,68\"><span class=\"hljs-attribute\">streamlit\nspacy\nfuzzywuzzy\npandas\nplotly\naltair</span>\n</code></pre>","children":[],"payload":{"lines":"52,69"}},{"content":"\n<p data-lines=\"69,70\"><strong>Download NLP Model</strong>:</p>\n<p data-lines=\"71,72\">Run the following command to download the English NLP model for Spacy:</p>\n<pre><code class=\"language-bash\">python -m spacy download en_core_web_sm\n</code></pre>","children":[],"payload":{"lines":"69,77"}},{"content":"\n<p data-lines=\"77,78\"><strong>Run the Application</strong>:</p>\n<pre><code class=\"language-bash\">streamlit run app.py\n</code></pre>\n<p data-lines=\"83,84\">This will start a local server, and you can access the app in your web browser at <code>http://localhost:8501</code>.</p>","children":[],"payload":{"lines":"77,85"}}],"payload":{"lines":"34,35"}},{"content":"Directory Structure","children":[{"content":"<pre><code data-lines=\"87,95\">/online-exam-portal\n├── data/                <span class=\"hljs-comment\"># Contains saved question and performance data</span>\n│   └── [subject_name]/  <span class=\"hljs-comment\"># Subfolders for each subject containing CSV files</span>\n├── app.py               <span class=\"hljs-comment\"># Main application file</span>\n├── requirements.txt      <span class=\"hljs-comment\"># List of required packages</span>\n└── README.md            <span class=\"hljs-comment\"># Project documentation</span>\n</code></pre>","children":[],"payload":{"lines":"87,95"}}],"payload":{"lines":"85,86"}},{"content":"Usage","children":[{"content":"\n<p data-lines=\"98,99\"><strong>Faculty Dashboard</strong>:</p>","children":[{"content":"Input the subject name, number of questions, date, and session.","children":[],"payload":{"lines":"99,100"}},{"content":"Enter the questions and their corresponding correct answers.","children":[],"payload":{"lines":"100,101"}},{"content":"Click the \"Save Questions\" button to save the data.","children":[],"payload":{"lines":"101,103"}}],"payload":{"lines":"98,103"}},{"content":"\n<p data-lines=\"103,104\"><strong>Student Page</strong>:</p>","children":[{"content":"Students can submit their answers after reading the questions provided by the faculty.","children":[],"payload":{"lines":"104,106"}}],"payload":{"lines":"103,106"}},{"content":"\n<p data-lines=\"106,107\"><strong>Analytics Dashboard</strong>:</p>","children":[{"content":"Faculty can view analytics, including overall plagiarism statistics and individual student performance metrics.","children":[],"payload":{"lines":"107,109"}}],"payload":{"lines":"106,109"}}],"payload":{"lines":"96,97"}},{"content":"How It Works","children":[{"content":"\n<p data-lines=\"111,112\"><strong>Saving Data</strong>: The application creates directories for each subject under the <code>data/</code> folder. Questions and answers are stored in CSV format, which makes them easy to access and analyze later.</p>","children":[],"payload":{"lines":"111,113"}},{"content":"\n<p data-lines=\"113,114\"><strong>Plagiarism and Grammar Checking</strong>: When students submit their answers, the application calculates plagiarism scores based on similarity to the correct answers. It also performs basic grammar checks using the Spacy library.</p>","children":[],"payload":{"lines":"113,115"}},{"content":"\n<p data-lines=\"115,116\"><strong>Visualizations</strong>: The analytics dashboard uses Plotly for creating interactive visualizations to present data clearly and effectively.</p>","children":[],"payload":{"lines":"115,116"}}],"payload":{"lines":"109,110"}}],"payload":{"lines":"3,4"}},{})</script>
+</body>
+</html>
